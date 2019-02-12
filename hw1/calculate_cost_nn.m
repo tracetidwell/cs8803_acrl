@@ -2,7 +2,7 @@ function avg_cost = calculate_cost_nn(w)
 
 init_setup;
 
-H = 500;
+H = 250;
 
 aileron_trim = -(model.params.Tx(1)) / model.params.Tx(3);
 elevator_trim = -(model.params.Ty(1)) / model.params.Ty(3);
@@ -43,10 +43,13 @@ for i=1:n_iter
         % simulate:
         noise_F_T = randn(6,1)*.1;
         %u = K * x(:, t);
-        cost = cost + x(:, t).' * Q * x(:, t) + delta_u.' * R * delta_u;
+        %cost = cost + x(:, t).' * Q * x(:, t) + delta_u.' * R * delta_u;
+        %cost = cost + sqrt(sum((x(:, end) - target_hover_state).^2));
         x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
+        
     end
-    all_costs(i) = cost;
+    %all_costs(i) = cost;
+    all_costs(i) = sqrt(sum(sum((x - target_hover_state).^2)));
 end
 
 avg_cost = mean(all_costs);

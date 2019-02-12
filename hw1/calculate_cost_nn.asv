@@ -1,4 +1,4 @@
-function avg_cost = calculate_cost(K)
+function avg_cost = calculate_cost_nn(w)
 
 init_setup;
 
@@ -39,15 +39,17 @@ for i=1:n_iter
         % state observation noise:
         v = randn(size(dx,1)-1,1)*.1;
         dx(1:end-1) = dx(1:end-1) + v;
-        delta_u = K * dx;
+        delta_u = simple_nn(dx, w);
         % simulate:
         noise_F_T = randn(6,1)*.1;
         %u = K * x(:, t);
         cost = cost + x(:, t).' * Q * x(:, t) + delta_u.' * R * delta_u;
         x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
+        sqrt(sum((x(:, end) - target_hover_state).^2))
     end
     all_costs(i) = cost;
 end
 
 avg_cost = mean(all_costs);
 
+end

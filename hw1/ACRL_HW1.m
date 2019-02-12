@@ -169,14 +169,16 @@ for t=1:H
 	% state observation noise:
 	v = randn(size(dx,1)-1,1)*.1;
 	dx(1:end-1) = dx(1:end-1) + v;
-	delta_u = K_ss* dx;
+	%delta_u = K_ss* dx;
+    delta_u = K_opt* dx;
+    %delta_u = simple_nn(dx, w_opt);
 	% simulate:
 	noise_F_T = randn(6,1)*1;
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
 end
-figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); title('K_{ss} hover with noise');
-figure; plot(x(idx.q,:)'); legend('qx', 'qy', 'qz', 'qw'); title('K_{ss} hover with noise');
-figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective'); title('K_{ss} hover with noise');
+figure; plot(x(idx.ned,1:500)'); legend('north', 'east', 'down'); title('K_{ss} hover with noise');
+figure; plot(x(idx.q,1:500)'); legend('qx', 'qy', 'qz', 'qw'); title('K_{ss} hover with noise');
+figure; plot(x(idx.u_prev,1:500)'); legend('aileron','elevator','rudder','collective'); title('K_{ss} hover with noise');
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -277,13 +279,14 @@ figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective
 %% over a space of policies. Use the 'real' non-linear model, not linearized dynamics.  
 %% We suggest starting with a simple linear controller class, but you might
 %% consider somewhat more sophisticated ones then that.
-options = optimset('MaxIter', 100);
+options = optimset('MaxIter', 1000, 'Display', 'iter');
 
 K_opt = fminsearch(@calculate_cost, K_ss, options);
 dlmwrite('K_opt.txt', K_opt);
 
+options = optimset('MaxIter', 10000, 'MaxFunEvals', 100000, 'Display', 'iter');
 w_init = randn(21*15 + 15*10 + 10*4,1)*.1;
-w_opt = fminsearch(@caclulate_cost_nn, w_init, options);
+w_opt = fminsearch(@calculate_cost_nn, w_init, options);
 dlmwrite('w_opt.txt', w_opt);
 
 %% Q1h: Build the same controller as above but now build it using the latency described above. Can you build a linear

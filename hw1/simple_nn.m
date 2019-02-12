@@ -14,8 +14,8 @@ w1 = reshape(w(1:idx1), input, d1);
 w2 = reshape(w(idx1+1:idx2), d1, d2);
 w3 = reshape(w(idx2+1:end), d2, output);
 
-a1 = sigmoid(w1.' * x);
-a2 = sigmoid(w2.' * a1);
-u = sigmoid(w3.' * a2);
+a1 = relu(w1.' * x);
+a2 = relu(w2.' * a1);
+u = w3.' * a2;
 
 end
