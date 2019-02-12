@@ -191,7 +191,7 @@ figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective
 %%          (ii) the smallest rotation around x, y, and z that makes the
 %%          controller perform poorly
 [max_ned, max_theta] = max_linearization(target_hover_state, K_ss, idx, H, dt, model);
-start_ned = [0; 0; 0];
+start_ned = [0; 0; 60];
 rotation_axis = [1; 0; 0];
 rotation_angle = 0;%(5/8)*pi; % radians
 start_q = [sin(rotation_angle/2)*rotation_axis; cos(rotation_angle/2)];
