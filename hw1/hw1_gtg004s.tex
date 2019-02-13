@@ -7,7 +7,9 @@
 \usepackage{amssymb}
 \usepackage{scrextend}
 \usepackage{indentfirst}
-%\graphicspath{ {./images/} }
+\usepackage{caption}
+\usepackage{subcaption}
+\graphicspath{ {./images/} }
 \DeclareMathAlphabet{\mathcal}{OMS}{cmsy}{m}{n}
 \SetMathAlphabet{\mathcal}{bold}{OMS}{cmsy}{b}{n}
 \begin{document}
@@ -15,21 +17,133 @@
 \begin{flushright}
 William Tidwell \par
 gtg004s \par
-CSE 6140 - CSE Algorithms \par
+CS8803 - Adaptive Control and Reinforcement Learning \par
 \today \par
 \end{flushright}
 
 \begin{center}
-Assignment 5
+Assignment 1
 \end{center}
 
 \begin{flushleft}
-a) Collaborated with: Nathan Todd, Pohl Llado, Bhoomi Chheda \par
+a) Discussed with: Pol Llado\par
 b) Sources: Textbooks and TA Office Hours \par
-c) Impression: None \par
 \end{flushleft}
 
-\section{Fiber Connectivity}
+\section{Initialization}
+The purpose of this assignment is to gain a better understanding of Linear Quadratic Regulators (LQR) by designing a controller for an unstable robot. A model that simulates an XCell Tempest helicopter in the flight regime close to hover is used for the exercise. 
+
+We start of by running the helicopter in open-loop, starting from the trim state. The NED plot is shown below. We can see that the position remains constant for all dimensions.
+
+\begin{figure}[h]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{open_loop}
+  \caption{Without Noise}
+  \label{fig:sub1}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{open_loop_noise}
+  \caption{With Noise}
+  \label{fig:sub2}
+\end{subfigure}
+\caption{Open Loop NED Plots}
+\label{fig:test}
+\end{figure}
+
+% \begin{figure}[h]
+% \caption{Open Loop NED}
+% \includegraphics[width=0.75\textwidth]{open_loop}
+% \centering
+% \end{figure}
+
+Next, we add some noise to the simulation and examine the NED plot. It becomes immediately evident that the helicopter very quickly diverges from the desired hover state.
+
+% \begin{figure}[h]
+% \caption{Open Loop with Noise NED}
+% \includegraphics[width=0.75\textwidth]{open_loop_noise}
+% \centering
+% \end{figure}
+
+\section{Steady State LQR Controller}
+
+ The first task is to design a steady state LQR controller. Given states $x$, we can use the controller $k$ to find a corresponding set of actions $a$ with the following relationship
+
+\begin{align}
+    u_t = k_t x_t
+\end{align}
+
+The goal is to find a value of $k$ once the system has stabilized and is running at steady state. We will call this value $k_{ss}$. The algorithm outlined below can be used to find $k_{ss}$.
+
+\begin{algorithm}
+\begin{algorithmic}[1]
+\Function{k-ss}{A, B, Q, R, T}
+	\State $P \gets Q$
+	\For {$i \gets 1:T$}
+		\State $k(i) \gets -(B^T P B + R)^{-1} B^T P A$
+		\State $P \gets Q + k(i)^T R k(i) + (A + B k(i))^T P (A + B k(i))$
+	\EndFor
+	\State \Return $k(T)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+where $A$ and $B$ are used to represent the dynamics in the form
+
+\begin{align}
+    x_{t+1} = Ax_t + Bu_t
+\end{align}
+
+$Q$ and $R$ are used to calculate the quadratic cost as
+
+\begin{align}
+    c(x, u) = x^TQX + u^TRu
+\end{align}
+
+and $T$ represents the horizon, or number of timesteps the algorithm runs. The plot below shows the convergence of all K-values. The values seem to have converged after around 100 iterations, and the search could have been terminated much earlier than it was. 
+
+% \begin{figure}[h]
+% \caption{Convergence of K Values}
+% \includegraphics[width=0.75\textwidth]{k_convergence}
+% \centering
+% \end{figure}
+
+The NED plot using the new controller can be seen below, and it looks identical to the Open Loop NED plot from above. This indicates that the controller is at least capable of keeping the helicoper hovering in the desired position under perfect conditions.
+
+\begin{figure}[h]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.4\linewidth]{kss_hover}
+  \caption{A subfigure}
+  \label{fig:sub1}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.3\linewidth]{kss_hover_noise}
+  \caption{A subfigure}
+  \label{fig:sub2}
+\end{subfigure}
+\caption{A figure with two subfigures}
+\label{fig:test}
+\end{figure}
+
+% \begin{figure}[h]
+% \caption{$K_{ss}$ Hover NED}
+% \includegraphics[width=0.5\textwidth]{kss_hover}
+% %\centering
+% \end{figure}
+
+Next we test the controller by adding noise to the simulation. 
+
+% \begin{figure}[h]
+% \caption{$K_{ss}$ Hover with Noise NED}
+% \includegraphics[width=0.5\textwidth]{kss_hover_noise}
+% %\centering
+% \end{figure}
+
 
 Problem: Suppose we have: $n$ cities, $C = \{c_1, c_2, ..., c_n\}$, $m$ roads, $R = \{r_1, r_2,..., r_m\}$, each connecting a pair of cities; and a constant $k \in \{2,...,|C|-1\}$. If we are given a subset $T$ of roads, $T \subseteq R$, then define $d_T(u)$ as the number of roads that city $u$ is connected to using only roads in $T$. We want to find a subset $T$ such that $|T| \leq |C|-1$ such that $1 \leq d_T(u) \leq k$ for all nodes $u \subseteq C$, and all cities in $C$ are connected together. We will call this the Fiber Connectivity problem, and we will denote it with the symbol $Y$.\\
 

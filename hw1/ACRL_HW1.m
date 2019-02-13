@@ -10,7 +10,6 @@ H = 2000;
 %% we can start working now %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find the trim controls:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,7 +50,9 @@ for t=1:H
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx);
 end
 
-figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); title('open loop');
+figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); %title('Open Loop'); 
+xlim([0, 2000]); ylim([-0.2, 1.0]); xlabel('Timesteps (s)'); ylabel('Distance (m)');
+
 figure; plot(x(idx.q,:)'); legend('qx', 'qy', 'qz', 'qw'); title('open loop');
 
 
@@ -71,7 +72,9 @@ for t=1:H
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
 end
 
-figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); title('open loop with noise');
+figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); %title('Open Loop with Noise');
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
+
 figure; plot(x(idx.q,:)'); legend('qx', 'qy', 'qz', 'qw'); title('open loop with noise');
 figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective'); title('open loop with noise');
 
@@ -130,18 +133,20 @@ for i=1:num_steps
 end
 
 figure; hold on;
+count = 0;
 for k=1:size(K{1},1)
 	for l=1:size(K{1},2)
 		for i=1:num_steps
 			K_entry_to_plot(i) = K{i}(k,l);
 		end
 		plot(K_entry_to_plot);
+        count = count + 1;
 	end
 end
+%title('Convergence of K Values');
+xlabel('Timesteps (s)'); ylabel('K Value'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
 
 K_ss = K{num_steps}; % the steady state (infinite horizon) feedback matrix
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% sanity check in simulation without noise:
@@ -155,7 +160,9 @@ for t=1:H
 	% simulate:
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx);
 end
-figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); title('K_{ss} hover');
+figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); %title('K_{ss} Hover');
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
+
 figure; plot(x(idx.q,:)'); legend('qx', 'qy', 'qz', 'qw'); title('K_{ss} hover');
 figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective'); title('K_{ss} hover');
 
@@ -169,14 +176,16 @@ for t=1:H
 	% state observation noise:
 	v = randn(size(dx,1)-1,1)*.1;
 	dx(1:end-1) = dx(1:end-1) + v;
-	%delta_u = K_ss* dx;
-    delta_u = K_opt* dx;
+	delta_u = K_ss* dx;
+    %delta_u = K_opt* dx;
     %delta_u = simple_nn(dx, w_opt);
 	% simulate:
 	noise_F_T = randn(6,1)*1;
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
 end
-figure; plot(x(idx.ned,1:500)'); legend('north', 'east', 'down'); title('K_{ss} hover with noise');
+figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); %title('K_{ss} Hover with Noise');
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
+
 figure; plot(x(idx.q,1:500)'); legend('qx', 'qy', 'qz', 'qw'); title('K_{ss} hover with noise');
 figure; plot(x(idx.u_prev,1:500)'); legend('aileron','elevator','rudder','collective'); title('K_{ss} hover with noise');
 
