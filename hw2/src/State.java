@@ -18,6 +18,7 @@ public class State {
 	private int turn = 0;
 	private int cleared = 0;
 	private int height = 0;
+	private long seed;
 	
 	//each square in the grid - int means empty - other values mean the turn it was placed
 	private int[][] field = new int[ROWS][COLS];
@@ -168,6 +169,8 @@ public class State {
 		turn = 0;
 		height = 0;
 		top = new int[COLS];
+		generator = new Random(seed);
+		nextPiece = randomPiece();
 		return true;
 	}
 
@@ -178,6 +181,7 @@ public class State {
 	}
 
 	public State(long seed) {
+		this.seed = seed;
 		generator = new Random(seed);
 		nextPiece = randomPiece();
 	}
@@ -198,17 +202,17 @@ public class State {
 	}
 	
 	//make a move based on the move index - its order in the legalMoves list
-	public void makeMove(int move) {
-		makeMove(legalMoves[nextPiece][move]);
+	public double makeMove(int move) {
+		return makeMove(legalMoves[nextPiece][move]);
 	}
 	
 	//make a move based on an array of orient and slot
-	public void makeMove(int[] move) {
-		makeMove(move[ORIENT],move[SLOT]);
+	public double makeMove(int[] move) {
+		return makeMove(move[ORIENT],move[SLOT]);
 	}
 	
 	//returns false if you lose - true otherwise
-	public int makeMove(int orient, int slot) {
+	public double makeMove(int orient, int slot) {
 		turn++;
 		//height if the first column makes contact
 		int height = top[slot]-pBottom[nextPiece][orient][0];
@@ -220,7 +224,7 @@ public class State {
 		//check if game ended
 		if(height+pHeight[nextPiece][orient] >= ROWS) {
 			lost = true;
-			return -100000;
+			return -1;
 		}
 
 		//for each column in the piece - fill in the appropriate blocks
@@ -271,20 +275,50 @@ public class State {
 		nextPiece = randomPiece();
 
 		if (rowsCleared == 0) {
-			return 0;
+			return 0.0;
 		}
 		else if (rowsCleared == 1) {
-			return 40;
+			return 0.0001;
 		}
 		else if (rowsCleared == 2) {
-			return 100;
+			return 0.00025;
 		}
 		else if (rowsCleared == 3) {
-			return 300;
+			return 0.00075;
 		}
 		else {
-			return 1200;
+			return 0.003;
 		}
+
+	}
+
+	//make a move based on the move index - its order in the legalMoves list
+	public int[] projectMove(int move) {
+		return projectMove(legalMoves[nextPiece][move]);
+	}
+
+	//make a move based on an array of orient and slot
+	public int[] projectMove(int[] move) {
+		return projectMove(move[ORIENT],move[SLOT]);
+	}
+
+	//returns false if you lose - true otherwise
+	public int[] projectMove(int orient, int slot) {
+		//height if the first column makes contact
+		int height = top[slot]-pBottom[nextPiece][orient][0];
+		int[] newTop = top.clone();
+
+		//for each column beyond the first in the piece
+		for(int c = 1; c < pWidth[nextPiece][orient];c++) {
+			height = Math.max(height,top[slot+c]-pBottom[nextPiece][orient][c]);
+		}
+
+		//adjust top
+		for(int c = 0; c < pWidth[nextPiece][orient]; c++) {
+			newTop[slot+c]=height+pTop[nextPiece][orient][c];
+		}
+
+		return newTop;
 
 	}
 
