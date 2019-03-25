@@ -12,35 +12,264 @@ import keras.backend as K
 from keras.utils.np_utils import to_categorical
 import tensorflow as tf
 
-def piece_encoder(piece):
-    piece_dict = {0: [0, 0, 0],
-                    1: [0, 0, 1],
-                    2: [0, 1, 0],
-                    3: [0, 1, 1],
-                    4: [1, 0, 0], 
-                    5: [1, 0, 1], 
-                    6: [1, 1, 0]}
-    
-    return piece_dict[piece]
 
-def board_encoder(game):
-    top = np.array(list(game.getTop()))
-    diff = np.array(top) - max(top)
-    diff[diff<-3] = -3
-    diff /= 3
-    return diff
+class FeatureFunction:
+
+    def __init__(self, theta):
+        self.theta = theta
+
+    def log_experience(self, s, a, r, next_s, d):
+        pass
+
+    def encode_state(self, tetris):
+        pass
+
+    def score_move(tetris, orient, slot, theta):
+        lost = False
+        rows_cleared = 0
+        field = np.frombuffer(tetris.getByteArray(), dtype=np.int32)
+        new_field = np.array(field.reshape(21, 10))
+        piece = tetris.getNextPiece()
+        top = list(tetris.getTop())
+        curr_height = top[slot]
+
+        height = curr_height - tetris.getpBottom()[piece][orient][0]
+
+        for i in range(1, tetris.getpWidth()[piece][orient]):
+            height = max(height, top[slot+i] - tetris.getpBottom()[piece][orient][i])
+
+        if height + tetris.getpHeight()[piece][orient] >= tetris.getRows():
+            lost = True
+
+        for i in range(tetris.getpWidth()[piece][orient]):
+            for j in range(height+tetris.getpBottom()[piece][orient][i], min(21, height+tetris.getpTop()[piece][orient][i])):
+                new_field[j][i+slot] = tetris.getTurnNumber() + 1
+
+        for c in range(tetris.getpWidth()[piece][orient]):
+            top[slot+c] = height + tetris.getpTop()[piece][orient][c]
+
+        if not lost:
+            for r in range(min(20, height + tetris.getpHeight()[piece][orient] - 1), height - 1, -1):
+                full = True
+                for c in range(tetris.getCols()):
+                    if new_field[r][c] == 0:
+                        full = False
+                        break
+                        
+                if full:
+                    rows_cleared += 1
+                    for c in range(tetris.getCols()):
+                        for i in range(r, top[c]):
+                            new_field[i][c] = new_field[i+1][c]
+                        top[c] -= 1
+                        while top[c] >= 1 and new_field[top[c]-1][c] == 0:
+                            top[c] -= 1
+
+        row_transitions = 0
+        for r in range(21):
+            for c in range(10):
+                if new_field[r, c] == 0:
+                    if new_field[r, max(0, c-1)] != 0:
+                        row_transitions += 1
+                    if new_field[r, min(9, c+1)] != 0:
+                        row_transitions += 1
+
+        col_transitions = 0
+        for c in range(10):
+            for r in range(21):
+                if new_field[r, c] == 0:
+                    if new_field[max(0, r-1), c] != 0:
+                        col_transitions += 1
+                    if new_field[min(20, r+1), c] != 0:
+                        col_transitions += 1
+
+        holes = 0
+        row_holes = 0
+        hole_depth = 0
+        for r in range(20):
+            row_hole = False
+            for c in range(10):
+                if new_field[r, c] == 0:
+                    if new_field[r+1, c] != 0:
+                        holes += 1
+                        hole_depth += 1
+                        i = 2
+                        while r+i < 20 and new_field[r+i, c] != 0:
+                            hole_depth += 1
+                            i += 1
+                        row_hole = True
+            if row_hole:
+                row_holes += 1
+
+        wells = 0
+        for c in range(10):
+            if c == 0:
+                if top[c+1] > top[c]:
+                    wells += sum(range(top[c+1] - top[c] + 1))
+            elif c == 9:
+                if top[c-1] > top[c]:
+                    wells += sum(range(top[c-1] - top[c] + 1))
+            else:
+                if top[c+1] > top[c] and top[c-1] > top[c]:
+                    min_diff = min(top[c+1] - top[c], top[c-1] - top[c])
+                    wells += sum(range(min_diff + 1))
+
+        if lost:
+            features = np.array([curr_height, rows_cleared, row_transitions, col_transitions, holes, wells, hole_depth, row_holes, 1])
+        else:
+            features = np.array([curr_height, rows_cleared, row_transitions, col_transitions, holes, wells, hole_depth, row_holes, 0])
+
+        return np.dot(features, theta)
+
+    def choose_action(self, tetris, state):
+        scores = []
+        for orient, slot in tetris.get_legal_moves():
+            score = score_move(tetris, orient, slot, self.theta)
+            scores.append(score)
+        return np.argmax(scores)
+
+
+class DeepQNetwork:
+
+    def __init__(self, session, input_dim, output_dim, buffer_size, state_encoder, min_experience=64, 
+                 gamma=0.99, gamma_decay=0.99, epsilon=0.99, epsilon_decay=0.9):
+        self.session = session
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.buffer_size = buffer_size
+        self.state_encoder = state_encoder
+        self.min_experience = min_experience
+        self.gamma = gamma
+        self.gamma_decay = gamma_decay
+        self.epsilon = epsilon
+        self.epsilon_decay = epsilon_decay
+        self.states = []
+        self.actions = []
+        self.rewards = []
+        self.next_states = []
+        self.dones = []
+
+        # def dqn_loss(actions):
+
+        #     def loss(self, y_true, y_pred):
+        #         action_vals = tf.reduce_sum(y_pred * tf.one_hot(actions, self.output_dim))
+        #         return tf.reduce_sum(tf.square(y_true - action_prob))
+
+        #     return loss
+
+        
+        self.targets = tf.placeholder(tf.float32, shape=(None,), name='targets')
+        self.actions_ = tf.placeholder(tf.int32, shape=(None,), name='actions')
+
+        #self.inputs = tf.placeholder(tf.float32, shape=(None, self.input_dim), name='inputs')
+        self.inputs = models.Input(shape=(self.input_dim,))
+        self.fc1 = layers.Dense(512, activation='relu')(self.inputs)
+        self.fc2 = layers.Dense(256, activation='relu')(self.fc1)
+        self.fc3 = layers.Dense(128, activation='relu')(self.fc2)
+        self.fc4 = layers.Dense(64, activation='relu')(self.fc3)
+        self.predictions = layers.Dense(self.output_dim, activation=None)(self.fc4)
+        self.model = models.Model(inputs=self.inputs, outputs=self.predictions)
+        self.model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+
+        self.init_loss = loss = tf.reduce_sum(tf.square(self.targets - self.predictions))
+        self.init_op = tf.train.RMSPropOptimizer(1e-2).minimize(self.init_loss)
+        
+        self.action_vals = tf.reduce_sum(self.predictions * tf.one_hot(self.actions_, self.output_dim))
+        self.train_loss = tf.reduce_sum(tf.square(self.targets - self.action_vals))
+        self.train_op = tf.train.AdamOptimizer(1e-2).minimize(self.train_loss)
+
+        # model = models.Sequential()
+        # model.add(layers.Dense(512, activation='relu', input_shape=(self.input_dim,)))
+        # model.add(layers.Dense(256, activation='relu'))
+        # model.add(layers.Dense(128, activation='relu'))
+        # model.add(layers.Dense(64, activation='relu'))
+        # model.add(layers.Dense(34))
+        # #model.compile(optimizer='adam', loss=dqn_loss(actions), metrics=['mae'])
+        # model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+
+        # self.model = model
+
+        # self.inputs = tf.placeholder(tf.float32, shape=(None, self.input_dim), name='inputs')
+        # self.targets = tf.placeholder(tf.float32, shape=(None,), name='targets')
+        # self.actions_ = tf.placeholder(tf.int32, shape=(None,), name='actions')
+
+        # action_vals = tf.reduce_sum(self.model.outputs[0] * tf.one_hot(self.actions_, self.output_dim))
+        # loss = tf.reduce_sum(tf.square(self.targets - action_vals))
+        # self.train_op = tf.train.AdamOptimizer(1e-2).minimize(loss)
+
+    # def initialize(self, x_train, y_train, epochs, batch_size, validation_data, callbacks):
+    #     self.model.fit(x_train, y_train, epochs=epochs, validation_data=validation_data, batch_size=batch_size, callbacks=callbacks)
+
+    def initialize(self, states, target_Qs, actions):
+        self.session.run(self.train_op, feed_dict={self.inputs: states,
+                                                   self.targets: target_Qs,
+                                                   self.actions_: actions})
+
+    def predict(self, x):
+        return self.model.predict(x)
+
+    def train(self, batch_size=256):
+        if len(self.states) < self.min_experience:
+            return
+        batch_size = min(batch_size, len(self.states))
+        indexes = np.random.choice(len(self.states), batch_size, replace=False)
+        states = np.array(self.states).reshape(-1, self.input_dim)[indexes]
+        actions = np.array(self.actions)[indexes]
+        rewards = np.array(self.rewards)[indexes]
+        next_states = np.array(self.next_states).reshape(-1, self.input_dim)[indexes]
+        dones = np.array(self.dones)[indexes]
+        Qs_next_state = self.predict(next_states)
+        target_Qs = []
+        
+        for i in range(batch_size):
+            if dones[i]:
+                target_Qs.append(rewards[i])
+            else:
+                target_Qs.append(rewards[i] + self.gamma * np.max(Qs_next_state[i]))
+                
+        self.session.run(self.train_op, feed_dict={self.inputs: states,
+                                                   self.targets: target_Qs,
+                                                   self.actions_: actions})
+
+    def choose_action(self, tetris, state):
+        self.epsilon *= self.epsilon_decay
+        if np.random.random() < self.epsilon:
+            return np.random.choice(len(tetris.get_legal_moves())-1)
+        else:
+            return np.argmax(self.predict(state)[0])
+
+    def reset_epsilon(self, epsilon):
+        self.epsilon = epsilon
+
+    def log_experience(self, s, a, r, next_s, d):
+        if len(self.states) >= self.buffer_size:
+            self.states.pop(0)
+            self.actions.pop(0)
+            self.rewards.pop(0)
+            self.next_states.pop(0)
+            self.dones.pop(0)
+            
+        self.states.append(s)
+        self.actions.append(a)
+        self.rewards.append(r)
+        self.next_states.append(next_s)
+        self.dones.append(d)
+
+    def encode_state(self, tetris):
+        return self.state_encoder.transform(tetris)
+
 
 class DQN:
     
-    def __init__(self, input_dim, output_dim, buffer_size, sess, piece_encoder, board_encoder, 
-                 learning_rate=0.001, gamma=0.99, gamma_decay=0.99, epsilon=1, epsilon_decay=0.001):
+    def __init__(self, input_dim, output_dim, buffer_size, sess, state_encoder, 
+                 alpha=0.001, gamma=0.99, gamma_decay=0.99, epsilon=1, epsilon_decay=0.001):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.buffer_size = buffer_size
         self.session = sess
         self.piece_encoder = piece_encoder
         self.board_encoder = board_encoder
-        self.lr = learning_rate
+        self.alpha = alpha
         self.gamma = gamma
         self.gamma_decay = gamma_decay
         self.epsilon = epsilon
@@ -54,7 +283,7 @@ class DQN:
         self.dones = []
         
         self.inputs = tf.placeholder(tf.float32, shape=(None, self.input_dim), name='inputs')
-        self.labels = tf.placeholder(tf.float32, shape=(None,), name='labels')
+        self.labels = tf.placeholder(tf.float32, shape=(None,self.output_dim), name='labels')
         self.actions_ = tf.placeholder(tf.int32, shape=(None,), name='actions')
 
         # self.fc1 = tf.layers.dense(inputs = self.inputs, 
@@ -72,9 +301,14 @@ class DQN:
         #                               units = self.output_dim, 
         #                               activation=None)
         
-        self.fc1 = layers.Dense(64, activation='relu')(self.inputs)
-        self.fc2 = layers.Dense(64, activation='relu')(self.fc1)
-        self.output = layers.Dense(self.output_dim, activation=None)(self.fc2)
+        self.fc1 = layers.Dense(512, activation='relu')(self.inputs)
+        self.fc2 = layers.Dense(256, activation='relu')(self.fc1)
+        self.fc3 = layers.Dense(128, activation='relu')(self.fc2)
+        self.fc4 = layers.Dense(64, activation='relu')(self.fc3)
+        self.output = layers.Dense(self.output_dim, activation=None)(self.fc4)
+
+        init_loss = loss = tf.reduce_sum(tf.square(self.labels - self.output))
+        self.init_op = tf.train.RMSPropOptimizer(1e-2).minimize(init_loss)
         
         action_prob = tf.reduce_sum(self.output * tf.one_hot(self.actions_, self.output_dim))
         loss = tf.reduce_sum(tf.square(self.labels - action_prob))
@@ -104,20 +338,29 @@ class DQN:
         self.rewards.append(r)
         self.next_states.append(next_s)
         self.dones.append(d)
-
-    def state_encoder(self, game):
-        top = list(game.getTop())
-        diffs = max(top) - np.array(top)
-        diffs[diffs > 1] = 2
-        encoded_board = self.board_encoder(game)
-        encoded_piece = self.piece_encoder(game.getNextPiece())
-        return np.concatenate([encoded_board, encoded_piece])
-        #return np.concatenate([diffs, encoded_piece])
         
         
     def predict(self, states):
         return self.session.run(self.output, feed_dict={self.inputs: states})
         #return self.model.predict(X)
+
+
+    def initialize(self, states, scores, epochs, batch_size):
+        n_batches = states.shape[0] // batch_size
+        for i in range(epochs):
+            start = 0
+            for i in range(n_batches-1):
+                states_batch = states[start:start+batch_size]
+                scores_batch = scores[start:start+batch_size]
+                start += batch_size
+                self.session.run(self.init_op, feed_dict={self.inputs: states_batch,
+                                                          self.labels: scores_batch})
+            states_batch = states[start:]
+            scores_batch = scores[start:]
+            self.session.run(self.init_op, feed_dict={self.inputs: states_batch,
+                                                        self.labels: scores_batch})
+            
+
     
     def train(self, batch_size=128):
         batch_size = min(batch_size, len(self.states))
@@ -134,7 +377,7 @@ class DQN:
             if dones[i]:
                 target_Qs.append(rewards[i])
             else:
-                target_Qs.append(rewards[i] * self.gamma * np.max(Qs_next_state[i]))
+                target_Qs.append(rewards[i] + self.gamma * np.max(Qs_next_state[i]))
                 
         self.session.run(self.train_op, feed_dict={self.inputs: states,
                                                    self.labels: target_Qs,
@@ -168,56 +411,10 @@ class DQN:
 #         self.model = model
 
 
-class Boltzmann_distribution:
-    
-    def __init__(self, input_dim, output_dim, mean=0, std=0.1, theta=None):
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        if not theta:
-            self.theta = np.random.uniform(mean, std, (1, input_dim))
-            
-    def get_legal_moves(self, game, piece=None):
-        if piece:
-            return [list(move) for move in list(game.legalMoves(piece))]
-        else:
-            return [list(move) for move in list(game.legalMoves())]
-            
-    def get_action_gradient(self, game, state_encoder):
-        moves = self.get_legal_moves(game)
-        action_states = np.array([state_encoder(list(game.projectMove(orient, slot))) for orient, slot in moves]).T
-        states = np.concatenate([action_states, np.zeros((self.input_dim, self.output_dim-len(moves)))], axis=1)
-        probs = np.exp(np.matmul(self.theta, states))
-        probs[probs==1] = 0
-        probs /= np.sum(probs)
-        action = np.random.choice(self.output_dim, p=probs.flatten())
-        gradient = states[:, action] - np.sum(states * probs, axis=1)
-        
-#         probs = np.zeros(len(moves))
-#         expectation = np.zeros(self.input_dim)
-#         for i, (orient, slot) in enumerate(moves):
-#             state = state_encoder(list(game.projectMove(orient, slot)))
-#             probs[i] = np.matmul(self.theta, state)
-#             expectation += state * probs[i]
-#         probs /= sum(probs)
-#         action = np.random.choice(len(moves), p=probs)
-#         gradient = state_encoder(list(game.projectMove(action))) - expectation
-        return action, gradient
-    
-    def get_gradient(self, game, action, state_encoder):
-        moves = self.get_legal_moves(game)
-        probs = self.get_actions(game, state_encoder)
-        expectation = np.zeros(self.input_dim)
-        for i, (orient, slot) in enumerate(moves):
-            expectation += state_encoder(list(game.projectMove(orient, slot))) * probs[i]
-        return state_encoder(list(game.projectMove(action))) - expectation
-    
-    def update_theta(self, del_theta):
-        self.theta += del_theta
-
 
 class Agent:
     
-    def __init__(self, state_values, input_dim, output_dim, policy=Boltzmann_distribution, alpha=0.001):
+    def __init__(self, input_dim, output_dim, state_encoder, policy=Boltzmann_distribution, theta=[], alpha=0.001):
         self.trajectory = []
         self.trajectories = []
         self.reward = []
@@ -228,28 +425,19 @@ class Agent:
         self.alpha = alpha
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.policy = policy(input_dim, output_dim)
-        self.board_encoder = OneHotEncoder(categories='auto')
-        self.board_encoder.fit(np.array(range(state_values)).reshape(-1, 1))
+        self.policy = policy(input_dim, output_dim, theta)
+        self.state_encoder = state_encoder
+        #self.board_encoder = OneHotEncoder(categories='auto')
+        #self.board_encoder.fit(np.array(range(state_values)).reshape(-1, 1))
         #self.piece_encoder = OneHotEncoder(categories='auto')
         #self.piece_encoder.fit(np.array(range(game.getPieces())).reshape(-1, 1))
-        self.piece_encoder = {0: [0, 0, 0],
-                              1: [0, 0, 1],
-                              2: [0, 1, 0],
-                              3: [0, 1, 1],
-                              4: [1, 0, 0], 
-                              5: [1, 0, 1], 
-                              6: [1, 1, 0]}
-        
-    def state_encoder(self, top):
-        #field = np.frombuffer(game.getByteArray(), dtype=np.int32)
-        #heights = np.argmax(field.reshape(21, 10), axis=0)
-        diffs = max(top) - np.array(top)
-        diffs[diffs > 1] = 2
-        #encoded_board = np.array(self.board_encoder.transform(diffs.reshape(-1, 1)).todense()).flatten()
-        encoded_piece = self.piece_encoder[tetris.getNextPiece()]
-        #return np.concatenate([encoded_board, encoded_piece])
-        return np.concatenate([diffs, encoded_piece])
+        #self.piece_encoder = {0: [0, 0, 0],
+                            #   1: [0, 0, 1],
+                            #   2: [0, 1, 0],
+                            #   3: [0, 1, 1],
+                            #   4: [1, 0, 0], 
+                            #   5: [1, 0, 1], 
+                            #   6: [1, 1, 0]}
     
     def log_sar(self, s, a, r):
         self.trajectory.append((s, a))

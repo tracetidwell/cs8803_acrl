@@ -18,6 +18,7 @@ public class State {
 	private int turn = 0;
 	private int cleared = 0;
 	private int height = 0;
+
 	private long seed;
 	
 	//each square in the grid - int means empty - other values mean the turn it was placed
@@ -163,15 +164,27 @@ public class State {
 	}
 
 	public boolean resetState() {
+		resetFields();
+		generator = new Random();
+		nextPiece = randomPiece();
+		return true;
+	}
+
+	public boolean resetState(long seed) {
+		resetFields();
+		this.seed = seed;
+		generator = new Random(seed);
+		nextPiece = randomPiece();
+		return true;
+	}
+
+	private void resetFields() {
 		field = new int[ROWS][COLS];
 		cleared = 0;
 		lost = false;
 		turn = 0;
 		height = 0;
 		top = new int[COLS];
-		generator = new Random(seed);
-		nextPiece = randomPiece();
-		return true;
 	}
 
 	//constructor
@@ -224,7 +237,7 @@ public class State {
 		//check if game ended
 		if(height+pHeight[nextPiece][orient] >= ROWS) {
 			lost = true;
-			return -1;
+			return -0.1;
 		}
 
 		//for each column in the piece - fill in the appropriate blocks
@@ -274,21 +287,7 @@ public class State {
 		//pick a new piece
 		nextPiece = randomPiece();
 
-		if (rowsCleared == 0) {
-			return 0.0;
-		}
-		else if (rowsCleared == 1) {
-			return 0.0001;
-		}
-		else if (rowsCleared == 2) {
-			return 0.00025;
-		}
-		else if (rowsCleared == 3) {
-			return 0.00075;
-		}
-		else {
-			return 0.003;
-		}
+		return rowsCleared * 0.1;
 
 	}
 

@@ -88,7 +88,7 @@ public class TFrame extends JFrame implements KeyListener{
 						break;
 					}
 					case(KeyEvent.VK_DOWN): {
-						if(s.makeMove(orient, slot)==-1)	mode = NONE;
+						if(s.makeMove(orient, slot)<0)	mode = NONE;
 						if(orient >= State.pOrients[s.nextPiece])	orient = 0;
 						if(slot > State.COLS-State.pWidth[s.nextPiece][orient])
 							slot = State.COLS-State.pWidth[s.nextPiece][orient];
