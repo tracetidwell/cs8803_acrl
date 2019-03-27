@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import time
 from sklearn.preprocessing import OneHotEncoder
 
 def play_game(tetris, feature_fn, theta, verbose=False):
@@ -20,7 +22,29 @@ def play_game(tetris, feature_fn, theta, verbose=False):
     if verbose:
         print('Total lines cleared after {} turns: {}'.format(tetris.getTurnNumber(), tetris.getRowsCleared()))
         print('--------------------------------------------------------------------------------')
-         
+
+    return tetris.getRowsCleared()
+
+def play_visual_game(tetris, feature_fn, theta, verbose=False):
+    tetris.resetState()
+    while not tetris.hasLost():
+        time.sleep(.02)
+        scores = []
+        moves = tetris.get_legal_moves()
+
+        field = np.frombuffer(tetris.getByteArray(), dtype=np.int32)
+        new_field = (np.array(field.reshape(21, 10)) > 0).astype(int)*99
+        os.system('cls')
+        print("Lines Cleared: {}".format(tetris.getRowsCleared()))
+        print(np.flip(new_field, 0))
+        for orient, slot in moves:
+            features = feature_fn(tetris, orient, slot)
+            score = np.dot(features,theta)
+            scores.append(score)
+
+        action = int(np.argmax(scores))
+        reward = tetris.makeMove(action)
+
     return tetris.getRowsCleared()
 
 def featurize_board(tetris, orient, slot):
@@ -35,7 +59,7 @@ def featurize_board(tetris, orient, slot):
     new_field = np.array(field.reshape(21, 10))
     piece = tetris.getNextPiece()
     top = list(tetris.getTop())
-    
+
     height = np.max(np.array(top[slot:slot+WIDTH]) - np.array(list(tetris.getpBottom()[piece][orient])[:WIDTH]))
 
     if height + tetris.getpHeight()[piece][orient] >= tetris.getRows():

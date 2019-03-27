@@ -35,3 +35,7 @@ To test the agent with pretrained weights run:
 To run for a specific number of games, specify N (default is 5)
 
 ```python test.py --iter N```
+
+To run with a visualization in python, use the --vis Flag
+
+```python test.py --iter 1 --vis```
