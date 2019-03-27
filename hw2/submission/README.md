@@ -31,3 +31,7 @@ To run the training the agent script run:
 To test the agent with pretrained weights run:
 
 ```python test.py```
+
+To run for a specific number of games, specify N (default is 5)
+
+```python test.py --iter N```
