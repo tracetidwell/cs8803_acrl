@@ -14,7 +14,11 @@ The project was tested with python 3.6.
 For both training or testing make sure you have the Java Server running.
 To run the server execute the below command from the `src/` folder:
 
+Linux:
 ```java -cp .:py4j0.10.8.1.jar StateEntryPoint```
+
+Windows:
+```java -cp .;py4j0.10.8.1.jar StateEntryPoint```
 
 ### Training
 
