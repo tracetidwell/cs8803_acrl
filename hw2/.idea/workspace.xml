@@ -2,28 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="103b8484-4b46-40d6-8bd6-aac784b33681" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../hw1/ACRL_HW1.m" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/ACRL_HW1.m" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/K_opt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/K_opt.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/calculate_cost.m" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/calculate_cost.m" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/calculate_cost_nn.m" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/calculate_cost_nn.m" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/hw1_gtg004s.aux" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/hw1_gtg004s.aux" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/hw1_gtg004s.log" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/hw1_gtg004s.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/hw1_gtg004s.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/hw1_gtg004s.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/hw1_gtg004s.synctex.gz" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/hw1_gtg004s.synctex.gz" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/hw1_gtg004s.tex" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/hw1_gtg004s.tex" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/images/kss_hover_noise.png" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/images/kss_hover_noise.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/simple_nn.m" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/simple_nn.m" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../hw1/w_opt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../hw1/w_opt.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.ipynb_checkpoints/tetris-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/.ipynb_checkpoints/tetris-checkpoint.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/actor_critic.py" beforeDir="false" afterPath="$PROJECT_DIR$/actor_critic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/agents.py" beforeDir="false" afterPath="$PROJECT_DIR$/agents.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/Tetris/State.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Tetris/State.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/Tetris/TFrame.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Tetris/TFrame.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/State.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/State.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/TFrame.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/TFrame.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tetris.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/tetris.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -58,7 +38,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/State.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="408">
+            <state relative-caret-position="1989">
               <caret line="135" column="5" selection-start-line="135" selection-start-column="5" selection-end-line="135" selection-end-column="5" />
               <folding>
                 <element signature="imports" expanded="true" />
@@ -88,7 +68,7 @@
         <entry file="file://$PROJECT_DIR$/src/StateEntryPoint.java">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="323">
-              <caret line="21" lean-forward="true" selection-start-line="21" selection-end-line="21" />
+              <caret line="21" selection-start-line="21" selection-end-line="21" />
               <folding>
                 <element signature="e#115#116#0" expanded="true" />
                 <element signature="e#152#153#0" expanded="true" />
@@ -161,8 +141,8 @@
           <select />
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
       <pane id="Scope" />
+      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -237,13 +217,12 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="48711000" />
+    <option name="totallyTimeSpent" value="48713000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1912" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2835821" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2867804" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -252,7 +231,7 @@
       <window_info id="Favorites" order="6" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49520257" visible="true" weight="0.248104" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49520257" weight="0.248104" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -304,7 +283,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/State.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="408">
+        <state relative-caret-position="1989">
           <caret line="135" column="5" selection-start-line="135" selection-start-column="5" selection-end-line="135" selection-end-column="5" />
           <folding>
             <element signature="imports" expanded="true" />
@@ -323,7 +302,7 @@
     <entry file="file://$PROJECT_DIR$/src/StateEntryPoint.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="323">
-          <caret line="21" lean-forward="true" selection-start-line="21" selection-end-line="21" />
+          <caret line="21" selection-start-line="21" selection-end-line="21" />
           <folding>
             <element signature="e#115#116#0" expanded="true" />
             <element signature="e#152#153#0" expanded="true" />
