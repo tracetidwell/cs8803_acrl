@@ -1,8 +1,11 @@
-function avg_cost = calculate_cost(K)
+function avg_cost = calculate_cost(K, H, n_iter)
 
 init_setup;
 
-H = 250;
+if nargin == 1
+    H = 250;
+    n_iter = 25;
+end
 
 aileron_trim = -(model.params.Tx(1)) / model.params.Tx(3);
 elevator_trim = -(model.params.Ty(1)) / model.params.Ty(3);
@@ -28,7 +31,6 @@ reward.input_multipliers = ones(4,1)*0;
 Q = diag(reward.state_multipliers) * dt;
 R = diag(reward.input_multipliers) * dt;
 
-n_iter = 25;
 all_costs = zeros(1, n_iter);
 
 for i=1:n_iter

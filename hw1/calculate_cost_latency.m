@@ -1,10 +1,11 @@
-function avg_cost = calculate_cost_nn(w, H, n_iter)
+function avg_cost = calculate_cost_latency(K, H, n_iter, latencies)
 
 init_setup;
 
 if nargin == 1
     H = 250;
     n_iter = 25;
+    latencies = 1:3;
 end
 
 aileron_trim = -(model.params.Tx(1)) / model.params.Tx(3);
@@ -31,29 +32,30 @@ reward.input_multipliers = ones(4,1)*0;
 Q = diag(reward.state_multipliers) * dt;
 R = diag(reward.input_multipliers) * dt;
 
+
 all_costs = zeros(1, n_iter);
 
 for i=1:n_iter
     x(:,1) = target_hover_state;
+    latency = datasample(latencies, 1);
     cost = 0;
-    for t=1:H
-        dx = compute_dx(target_hover_state, x(:,t));
+    for j=1:latency+1
+        x(:,j) = target_hover_state;
+    end
+    for t=latency+1:H
+        dx = compute_dx(target_hover_state, x(:,t-latency));
         % state observation noise:
-        v = randn(size(dx,1)-1,1)*.1;
-        dx(1:end-1) = dx(1:end-1) + v;
-        delta_u = simple_nn(dx, w);
+        %v = randn(size(dx,1)-1,1)*.1;
+        %dx(1:end-1) = dx(1:end-1) + v;
+        delta_u = K * dx;
         % simulate:
         noise_F_T = randn(6,1)*.1;
         %u = K * x(:, t);
         cost = cost + x(:, t).' * Q * x(:, t) + delta_u.' * R * delta_u;
-        %cost = cost + sqrt(sum((x(:, end) - target_hover_state).^2));
         x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
-        
     end
     all_costs(i) = cost;
-    %all_costs(i) = sqrt(sum(sum((x - target_hover_state).^2)));
 end
 
 avg_cost = mean(all_costs);
 
-end

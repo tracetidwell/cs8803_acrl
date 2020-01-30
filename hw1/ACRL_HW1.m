@@ -176,15 +176,15 @@ for t=1:H
 	% state observation noise:
 	v = randn(size(dx,1)-1,1)*.1;
 	dx(1:end-1) = dx(1:end-1) + v;
-	delta_u = K_ss* dx;
-    %delta_u = K_opt* dx;
+	%delta_u = K_ss* dx;
+    delta_u = K_opt* dx;
     %delta_u = simple_nn(dx, w_opt);
 	% simulate:
 	noise_F_T = randn(6,1)*1;
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
 end
 figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); %title('K_{ss} Hover with Noise');
-xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); ylim([-2.5, 2.0]);
 
 figure; plot(x(idx.q,1:500)'); legend('qx', 'qy', 'qz', 'qw'); title('K_{ss} hover with noise');
 figure; plot(x(idx.u_prev,1:500)'); legend('aileron','elevator','rudder','collective'); title('K_{ss} hover with noise');
@@ -203,8 +203,8 @@ figure; plot(x(idx.u_prev,1:500)'); legend('aileron','elevator','rudder','collec
 %%          controller perform poorly
 [max_ned, max_theta] = max_linearization(target_hover_state, K_ss, idx, H, dt, model);
 start_ned = [0; 0; 0];
-rotation_axis = [1; 0; 0];
-rotation_angle = 0;%(5/8)*pi; % radians
+rotation_axis = [0; 0; 1];
+rotation_angle = (11/8)*pi; % radians
 start_q = [sin(rotation_angle/2)*rotation_axis; cos(rotation_angle/2)];
  
 start_state = target_hover_state;
@@ -219,7 +219,10 @@ for t=1:H
 	% simulate:
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx);
 end
-figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); title('K_{ss} hover with perturbed initial state');
+
+figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); %title('K_{ss} Hover with Noise');
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]);% ylim([-2.5, 2.0]);
+
 figure; plot(x(idx.q,:)'); legend('qx', 'qy', 'qz', 'qw'); title('K_{ss} hover with perturbed initial state');
 figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective'); title('K_{ss} hover with perturbed initial state');
 
@@ -252,7 +255,10 @@ for t=1:H
 	noise_F_T = randn(6,1)*1;
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
 end
-figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); title('K_{ss} hover with perturbed initial state and clipping');
+
+figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); %title('K_{ss} hover with perturbed initial state and clipping');
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
+
 figure; plot(x(idx.q,:)'); legend('qx', 'qy', 'qz', 'qw'); title('K_{ss} hover with perturbed initial state and clipping');
 figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective'); title('K_{ss} hover with perturbed initial state and clipping');
 
@@ -266,7 +272,7 @@ figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective
 %% find out the smallest (discrete) latency that makes the controller
 %% perform poorly; hand in plot of q(uaternion) and u_prev + the latency value
 
-latency = 1;%% your pick
+latency = 3;%% your pick
 for i=1:latency+1
 	x(:,i) = target_hover_state;
 end
@@ -274,31 +280,62 @@ end
 for t=latency+1:H
 	% control law:
 	dx = compute_dx(target_hover_state, x(:,t-latency));
-	delta_u = K_ss* dx;
+	%delta_u = K_ss* dx;
+    delta_u = K_ls* dx;
+    %delta_u = K_lr* dx;
 	% simulate:
 	noise_F_T = randn(6,1)*1;
 	x(:,t+1) = f_heli(x(:,t), delta_u, dt, model, idx, noise_F_T);
 end
-figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); title('K_{ss} hover with latency');
-figure; plot(x(idx.q,:)'); legend('qx', 'qy', 'qz', 'qw'); title('K_{ss} hover with latency');
-figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective'); title('K_{ss} hover with latency');
+
+figure; plot(x(idx.ned,:)'); legend('north', 'east', 'down'); %title('K_{ss} hover with latency');
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
+
+figure; plot(x(idx.q,:)'); legend('qx', 'qy', 'qz', 'qw'); %title('K_{ss} hover with latency');
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
+
+figure; plot(x(idx.u_prev,:)'); legend('aileron','elevator','rudder','collective'); %title('K_{ss} hover with latency');
+xlabel('Timesteps (s)'); ylabel('Distance (m)'); xlim([0, 2000]); %ylim([-0.2, 1.0]);
 
 %% Q1g: Build a controller about the hover 
 %% configuration by performing search 
 %% over a space of policies. Use the 'real' non-linear model, not linearized dynamics.  
 %% We suggest starting with a simple linear controller class, but you might
 %% consider somewhat more sophisticated ones then that.
-options = optimset('MaxIter', 1000, 'Display', 'iter');
-
-K_opt = fminsearch(@calculate_cost, K_ss, options);
+k_options = optimset('MaxIter', 3000, 'Display', 'iter');
+K_opt = fminsearch(@calculate_cost, K_ss, k_options);
 dlmwrite('K_opt.txt', K_opt);
 
-options = optimset('MaxIter', 10000, 'MaxFunEvals', 100000, 'Display', 'iter');
-w_init = randn(21*15 + 15*10 + 10*4,1)*.1;
-w_opt = fminsearch(@calculate_cost_nn, w_init, options);
+nn_options = optimset('MaxIter', 10000, 'MaxFunEvals', 100000, 'Display', 'iter');
+w_init = randn(21*15 + 15 + 15*10 + 10 + 10*4 + 4,1)*.1;
+w_opt = fminsearch(@calculate_cost_nn, w_init, nn_options);
 dlmwrite('w_opt.txt', w_opt);
 
 %% Q1h: Build the same controller as above but now build it using the latency described above. Can you build a linear
 %% controller more robust to various latencies then the LQR one? Plot the range of latencies for which the LQR and
 %% policy search controller can stabilize the helicopter.
+
+k_options = optimset('MaxIter', 3000, 'Display', 'iter');
+K_lr = fminsearch(@calculate_cost_latency, randn(size(K_ss)) * 0.1, k_options);
+dlmwrite('K_lr.txt', K_lr);
+
+k_options = optimset('MaxIter', 3000, 'Display', 'iter');
+K_ls = fminsearch(@calculate_cost_latency, K_ss, k_options);
+dlmwrite('K_ls3.txt', K_ls);
+
+figure; hold on;
+
+costs = zeros(1, 3);
+for i = 1:3
+    costs(i) = calculate_cost_latency(K_ss, 2000, 25, [i-1]);
+end
+scatter(1:3, costs, 'filled');
+
+costs = zeros(1, 3);
+for i = 1:3
+    costs(i) = calculate_cost_latency(K_ls, 2000, 25, [i-1]);
+end
+scatter(1:3, costs, 'filled'); 
+
+xlim([0.5, 3.5]); xlabel('Latency (s)'); ylabel('Cost'); legend('K_{ss}', 'K_{latency}');
 
