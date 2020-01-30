@@ -4,4 +4,4 @@ numpy
 joblib
 mpi4py
 comet-ml
-tensorflow==1.13.1
+tensorflow==1.15.2
